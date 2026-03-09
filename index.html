@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>A Royal Decree</title>
+    <style>
+        :root { 
+            --royal-red: #4a0404; 
+            --velvet-dark: #2a0202;
+            --gold: #d4af37; 
+            --gold-glow: rgba(212, 175, 55, 0.5);
+            --parchment: #f4e8d1;
+            --ink: #2c1a0e;
+        }
+        
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: radial-gradient(circle at center, var(--royal-red) 0%, var(--velvet-dark) 100%);
+            font-family: 'Times New Roman', serif; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            overflow: hidden;
+        }
+
+        /* Confetti Canvas */
+        #confetti-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100; pointer-events: none;
+        }
+
+        /* The Scroll Container */
+        .scroll-container {
+            position: relative;
+            width: 90%;
+            max-width: 450px;
+            background: var(--parchment);
+            border: 2px solid var(--gold);
+            border-radius: 5px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(139, 69, 19, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            
+            /* Starts closed */
+            height: 120px;
+            transition: height 1.5s cubic-bezier(0.65, 0, 0.35, 1);
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        /* The Wax Seal */
+        .wax-seal {
+            position: absolute;
+            width: 80px; height: 80px;
+            background: radial-gradient(circle, #b30000 0%, #660000 100%);
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.5);
+            display: flex; justify-content: center; align-items: center;
+            color: var(--gold); font-size: 2.5rem; font-style: italic; font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            cursor: pointer;
+            z-index: 20;
+            transition: transform 0.3s, opacity 0.8s;
+            border: 2px solid #8b0000;
+        }
+
+        .wax-seal:active { transform: scale(0.95); }
+        .wax-seal.cracked { transform: scale(1.1) rotate(5deg); opacity: 0; pointer-events: none; }
+        
+        /* Tap Instruction */
+        .tap-text {
+            position: absolute;
+            top: -40px;
+            color: var(--gold);
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--gold-glow);
+            transition: opacity 0.5s;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* The Content Inside */
+        .content {
+            opacity: 0;
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--ink);
+            display: none; /* Hidden until unrolled */
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .content h1 {
+            font-size: 2rem;
+            color: #5c0000;
+            margin: 0 0 10px 0;
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .line {
+            font-size: 1.15rem;
+            line-height: 1.6;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        /* The Final Button */
+        .crown-btn {
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--gold) 0%, #b8860b 100%);
+            border: none;
+            border-radius: 30px;
+            color: #fff;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 15px var(--gold-glow);
+            cursor: pointer;
+            opacity: 0;
+            transition: transform 0.2s;
+        }
+        .crown-btn:active { transform: scale(0.95); }
+
+        /* Animation Classes */
+        .fade-in-up {
+            animation: fadeInUp 1s forwards ease-out;
+        }
+
+        @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="tap-text" id="tap-instruction">A Decree for Sayantani<br><span style="font-size: 0.9rem; opacity: 0.8;">Tap the seal to open</span></div>
+
+    <div class="scroll-container" id="scroll">
+        <div class="wax-seal" id="seal" onclick="breakSeal()">S</div>
+        
+        <div class="content" id="scroll-content">
+            <h1>Royal Decree</h1>
+            <div class="line">Let it be known across the realm,</div>
+            <div class="line">that Sayantani has shown the utmost grace.</div>
+            <div class="line">If you ready to come back with your will,</div>
+            <div class="line">and for that, you have my absolute loyalty.</div>
+            <div class="line">The king was foolish, but the queen was merciful.</div>
+            <div class="line" style="font-weight: bold; color: #5c0000;">From this day forward, your peace is my priority.</div>
+            
+            <button class="crown-btn" id="crown-btn" onclick="triggerCoronation()">Accept Your Crown</button>
+        </div>
+    </div>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <script>
+        const seal = document.getElementById('seal');
+        const scroll = document.getElementById('scroll');
+        const content = document.getElementById('scroll-content');
+        const instruction = document.getElementById('tap-instruction');
+        const lines = document.querySelectorAll('.line');
+        const crownBtn = document.getElementById('crown-btn');
+
+        // Phase 2: Unrolling the Scroll
+        function breakSeal() {
+            // Crack the seal
+            seal.classList.add('cracked');
+            instruction.style.opacity = '0';
+            
+            // Wait for seal to fade, then unroll
+            setTimeout(() => {
+                seal.style.display = 'none';
+                scroll.style.height = '500px'; // Unroll height
+                
+                // Show content container
+                setTimeout(() => {
+                    content.style.display = 'flex';
+                    content.style.opacity = '1';
+                    
+                    // Phase 3: Stagger the text fading in
+                    lines.forEach((line, index) => {
+                        setTimeout(() => {
+                            line.classList.add('fade-in-up');
+                        }, index * 1200); // 1.2 seconds between each line
+                    });
+
+                    // Reveal the button last
+                    setTimeout(() => {
+                        crownBtn.classList.add('fade-in-up');
+                    }, lines.length * 1200 + 500);
+
+                }, 1000); // Wait for unroll to finish
+
+            }, 600);
+        }
+
+        // Phase 4: The Coronation (Gold Sparkles)
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        let particles = [];
+
+        function triggerCoronation() {
+            crownBtn.innerText = "My Queen 👑";
+            crownBtn.style.background = "#5c0000";
+            
+            for(let i = 0; i < 150; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2 + 150,
+                    r: Math.random() * 4 + 2,
+                    dx: Math.random() * 10 - 5,
+                    dy: Math.random() * -15 - 5,
+                    color: Math.random() > 0.5 ? '#d4af37' : '#ffd700'
+                });
+            }
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            requestAnimationFrame(animateConfetti);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach((p, index) => {
+                p.x += p.dx;
+                p.y += p.dy;
+                p.dy += 0.3; // Gravity
+                
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+                
+                // Remove particles that fall off screen
+                if(p.y > canvas.height) {
+                    particles.splice(index, 1);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
